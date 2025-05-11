@@ -136,6 +136,7 @@ int main(int argc, char **argv) {
 	backlightStore();
 
 	ControllerPacket packet;
+	memset(&packet, 0, sizeof(packet));
 
 	while (aptMainLoop()) {
 		controllerPacketRead(&packet);

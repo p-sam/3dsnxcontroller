@@ -27,27 +27,36 @@ void controllerPacketDump(const ControllerPacket* packet) {
 			printf("%s ", g_keysNames[i]);
 		}
 	}
-	printf("\n\n");
+	printf("\n");
 
-	printf("cLeft: x = %04d; y = %04d\n", packet->cLeft.dx, packet->cLeft.dy);
-	printf("cRight: x = %04d; y = %04d\n", packet->cRight.dx, packet->cRight.dy);
+	printf("cLeft : x=%06ld; y=%06ld\n", packet->cLeft.dx, packet->cLeft.dy);
+	printf("cRight: x=%06ld; y=%06ld\n", packet->cRight.dx, packet->cRight.dy);
 
 	touchPosition touchPos;
 	hidTouchRead(&touchPos);
-	printf("touch: x = %04d; y = %04d\n", touchPos.px, touchPos.py);
+	printf("touch : x=%04d; y=%04d\n", touchPos.px, touchPos.py);
+}
+
+static inline void _circleToPacket(circlePosition* in, ControllerPacketCircle* out) {
+	out->dx = (s32)(in->dx) * CONTROLLER_PACKET_STICK_MAX / CONTROLLER_INPUT_STICK_MAX;
+	out->dy = (s32)(in->dy) * CONTROLLER_PACKET_STICK_MAX / CONTROLLER_INPUT_STICK_MAX;
 }
 
 void controllerPacketRead(ControllerPacket* out) {
-	touchPosition touchPos;
-
 	hidScanInput();
+
+	touchPosition touchPos;
 	hidTouchRead(&touchPos);
 
 	out->magic = CONTROLLER_PACKET_MAGIC;
 	out->tick = svcGetSystemTick();
 	out->kHeld = hidKeysHeld();
-	hidCircleRead(&out->cLeft);
-	hidCstickRead(&out->cRight);
+
+	circlePosition circlePos;
+	hidCircleRead(&circlePos);
+	_circleToPacket(&circlePos, &out->cLeft);
+	hidCstickRead(&circlePos);
+	_circleToPacket(&circlePos, &out->cRight);
 
 	if(out->kHeld & KEY_TOUCH) {
 		if(touchPos.py <= 20) {
